@@ -3,13 +3,11 @@ package dev.wndenis.lapka.utils
 import android.animation.FloatEvaluator
 import androidx.compose.ui.geometry.Offset
 import androidx.core.math.MathUtils
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.pow
-import kotlin.math.sin
+import dev.wndenis.lapka.compose.PI_HALF
+import kotlin.math.*
 
 
-class Cat(
+class CatCalc(
     var origin: Offset = Offset(0f, 0f)
 ) {
     var maxHandLength = 0f
@@ -33,19 +31,38 @@ class Cat(
         private set
     var halfHandLength: Double = 0.01
         private set
+    var elbowPosition = Offset(0f, 0f)
+        private set
+    var pawPosition = Offset(0f, 0f)
+        private set
+    var pawBaseVector = Offset(0f, 0f)
+        private set
 
-    private fun recalculate() {
-        updateDistanceToTapTarget()
-        updateReachableTarget()
-        calculateAngles()
-        calculateHalfHandLength()
+
+    public fun getBonesState(): BonesState {
+        return BonesState(
+            startPosition = origin,
+            elbowPosition = elbowPosition,
+            pawPosition = pawPosition,
+            pawRotation = pawBaseVector
+        )
     }
 
-    private fun updateDistanceToTapTarget() {
+    private fun recalculate() {
+        calculateDistanceToTapTarget()
+        calculateReachableTarget()
+        calculateAngles()
+        calculateHalfHandLength()
+        calculateElbowPosition()
+        calculatePawPosition()
+        calculatePawBaseVector()
+    }
+
+    private fun calculateDistanceToTapTarget() {
         distanceToTapTarget = (tapTarget - origin).len()
     }
 
-    private fun updateReachableTarget() {
+    private fun calculateReachableTarget() {
         reachableTarget =
             if (distanceToTapTarget > maxHandLength)
                 origin + (tapTarget - origin).normFactor(maxHandLength)
@@ -78,16 +95,29 @@ class Cat(
         // sin theorem
         halfHandLength = (reachableTarget - origin).len() / sin(elbowAngle) * sin(shoulderAngle)
     }
+
+    private fun calculateElbowPosition() {
+        elbowPosition = origin + (reachableTarget - origin)
+            .normFactor(halfHandLength)
+            .rotate(shoulderAngle)
+    }
+
+    private fun calculatePawPosition() {
+        pawPosition = elbowPosition + (reachableTarget - elbowPosition)
+            .normFactor(halfHandLength)
+    }
+
+    private fun calculatePawBaseVector() {
+        // find 90 degree vector to target-origin
+        val dx = reachableTarget.x - origin.x
+        val dy = reachableTarget.y - origin.y
+        pawBaseVector = Offset(
+            x = (cos(PI_HALF) * dx - sin(PI_HALF) * dy).toFloat(),
+            y = (sin(PI_HALF) * dx + cos(PI_HALF) * dy).toFloat()
+        )
+    }
 }
 
-//data class DrawStyle(  // hand - paw  - finger - claw
-//    val handThickness: Float = 45f,
-//    val pawRadius: Float = 40f,
-//    val fingerOffsetFromPaw: Float = 38f,
-//    val fingerRadius: Float = 15f,
-//    val clawLength: Float = 25f,
-//    val clawWidth: Float = 1.5f
-//)
 
 object DrawStyleConfig { // hand - paw  - finger - claw
     val handThickness: Pair<Float, Float> =
@@ -115,11 +145,10 @@ class RawHandState(
         }
     }
 
-
-    val startPosition = handState.startPosition
-    val elbowPosition = handState.elbowPosition
-    val pawPosition = handState.pawPosition
-    val pawRotation = handState.pawRotation
+    val startPosition = handState.bonesState.startPosition
+    val elbowPosition = handState.bonesState.elbowPosition
+    val pawPosition = handState.bonesState.pawPosition
+    val pawRotation = handState.bonesState.pawRotation
 
     fun scale(value: Float): Float {
         return value * (1 + handState.animatableProperties.handRaiseFactor * DrawStyleConfig.raiseScale)
@@ -162,13 +191,31 @@ data class AnimatableHandProperties(
     val pawFistFactor: Float = 1f  // 0..1, 0 - relaxed, 1 - fist
 )
 
-data class HandState(
+data class BonesState(
     val startPosition: Offset,
     val elbowPosition: Offset,
     val pawPosition: Offset,
     val pawRotation: Offset,
+)
+
+data class HandState(
+    val bonesState: BonesState,
     val animatableProperties: AnimatableHandProperties
 )
 
+
+// TODO: IMPORTANT
+class AnimTarget(
+//    val basicConfig  // like screen size, origin
+    val target: Offset,
+    val animatableProperties: AnimatableHandProperties
+)
+{
+    fun unpack(): HandState {
+        val cat = CatCalc()
+        cat.tapTarget = target
+        return HandState(cat.getBonesState(), animatableProperties)
+    }
+}
 
 

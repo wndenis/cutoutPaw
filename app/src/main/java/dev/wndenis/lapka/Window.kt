@@ -7,17 +7,17 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.ViewTreeSavedStateRegistryOwner
-import dev.wndenis.lapka.compose.Lapka
 
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -66,7 +66,7 @@ class Window(  // declaring required variables
 
         mView.findViewById<ComposeView>(R.id.compose_view).apply {
             setContent {
-                Lapka()
+//                Lapka()
             }
         }
         val viewModelStore = ViewModelStore()
