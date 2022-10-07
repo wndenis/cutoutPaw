@@ -1,8 +1,6 @@
 package dev.wndenis.lapka.lapka
 
-import dev.wndenis.lapka.compose.HandState
 import ru.nsk.kstatemachine.createStateMachine
-import ru.nsk.kstatemachine.state
 
 class CatBrain {
 
@@ -24,6 +22,6 @@ val machine = createStateMachine(name = "CatBrain") { }
 
  */
 
-class AnimTask(
-    handState: HandState
-)
+//class AnimTask(
+//    handState: HandState
+//)
