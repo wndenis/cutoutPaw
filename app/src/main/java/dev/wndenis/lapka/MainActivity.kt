@@ -1,6 +1,7 @@
 package dev.wndenis.lapka
 
 import android.content.Intent
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
@@ -15,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.asComposePath
 import androidx.fragment.app.FragmentActivity
 import dev.wndenis.lapka.compose.Lapka
 import dev.wndenis.lapka.utils.area
@@ -24,7 +25,8 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 
 
 class MainActivity : FragmentActivity() {
-    @RequiresApi(Build.VERSION_CODES.Q)
+    //    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -54,11 +56,12 @@ class MainActivity : FragmentActivity() {
         val screenWidth = outMetrics.widthPixels
         val screenHeight = outMetrics.heightPixels
 
-        var cutoutPosition = Offset(150f,150f) // Offset(screenWidth / 2f, 0f)
+        var cutoutPosition = Offset(150f, 150f) // Offset(screenWidth / 2f, 0f)
         var cutoutProjection = 20f
-
+        var path: Path? = null
         if (displayCutout != null && displayCutout.boundingRects.size > 0) {
             val boundings: List<Rect> = displayCutout.boundingRects
+            path = displayCutout.cutoutPath
             var biggestIdx = 0
             var biggestArea = 0
             for (i in boundings.indices) {
@@ -79,13 +82,13 @@ class MainActivity : FragmentActivity() {
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         )
         setContent {
+            path?.let { Debug(path) }
 //            with(WindowCompat.getInsetsController(window, window.decorView)) {
 //                this?.systemBarsBehavior =
 //                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 //                this?.hide(WindowInsetsCompat.Type.systemBars())
 //            }
 //            Debug(top.toFloat(), left.toFloat(), width.toFloat(), height.toFloat())
-
             Lapka(screenWidth.toFloat(), screenHeight.toFloat(), cutoutPosition, cutoutProjection)
 //            Fish()
         }
@@ -119,13 +122,18 @@ class MainActivity : FragmentActivity() {
     }
 
     @Composable
-    fun Debug(top: Float, left: Float, width: Float, height: Float) {
+//    fun Debug(top: Float, left: Float, width: Float, height: Float) {
+    fun Debug(path: Path) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                color = ComposeColor.Cyan,
-                topLeft = Offset(left, top),
-                size = Size(width, height)
+            drawPath(
+                path = path.asComposePath(),
+                color = ComposeColor.Red
             )
+//            drawRect(
+//                color = ComposeColor.Cyan,
+//                topLeft = Offset(left, top),
+//                size = Size(width, height)
+//            )
         }
     }
 

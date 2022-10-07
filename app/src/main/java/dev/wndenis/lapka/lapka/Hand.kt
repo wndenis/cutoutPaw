@@ -121,7 +121,7 @@ fun DrawScope.DrawLapka(state: RawHandState) {
     drawLine(
         start = state.startPosition,
         end = state.elbowPosition,
-        color = Color.Red,
+        color = Color.Cyan,
         strokeWidth = state.handThickness,
         cap = StrokeCap.Round
     )
@@ -199,19 +199,21 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
     { it }
 
 //    val scope = rememberCoroutineScope()
-    Scaffold() {
+    Scaffold(
+        backgroundColor = Color.Transparent
+    ) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-            .pointerInput(key1 = Unit) {
-                detectDragGestures(
-                    onDragStart = { target = it },
-                    onDrag = { change, _ -> target = change.position }
-                )
-            }
-            .pointerInput(key1 = Unit) {
-                detectTapGestures { target = it }
-            }
+                .pointerInput(key1 = Unit) {
+                    detectDragGestures(
+                        onDragStart = { target = it },
+                        onDrag = { change, _ -> target = change.position }
+                    )
+                }
+                .pointerInput(key1 = Unit) {
+                    detectTapGestures { target = it }
+                }
         ) {
             cat.maxHandLength = size.height / 3
 //            cat.tapTarget = Offset(0f, 0f)//currentTarget
@@ -241,6 +243,7 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
                 )
             )
         }
+
         Column(
             modifier = Modifier
                 .padding(30.dp)
