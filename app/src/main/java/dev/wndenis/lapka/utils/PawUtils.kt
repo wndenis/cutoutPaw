@@ -1,6 +1,5 @@
 package dev.wndenis.lapka.utils
 
-import android.animation.FloatEvaluator
 import androidx.compose.ui.geometry.Offset
 import androidx.core.math.MathUtils
 import dev.wndenis.lapka.compose.PI_HALF
@@ -8,8 +7,9 @@ import kotlin.math.*
 
 
 class CatCalc(
-    var origin: Offset = Offset(0f, 0f)
+    val basicConfig: BasicConfig
 ) {
+    val origin = basicConfig.origin
     var maxHandLength = 0f
         set(value) {
             field = value
@@ -39,7 +39,7 @@ class CatCalc(
         private set
 
 
-    public fun getBonesState(): BonesState {
+    fun getBonesState(): BonesState {
         return BonesState(
             startPosition = origin,
             elbowPosition = elbowPosition,
@@ -77,10 +77,28 @@ class CatCalc(
                 maxHandLength * 0f,
                 maxHandLength * 1f
             ) / maxHandLength * 1f
+
+        val dx = abs(reachableTarget.x - origin.x)
+        val rawMiddleFactor =
+            let {
+                val sub = if (reachableTarget.x > origin.x) {
+                    basicConfig.screenWidth - origin.x
+                } else {
+                    origin.x
+                }
+                dx / (sub / 3)
+            }
+        val middleFactor = MathUtils.clamp(rawMiddleFactor, 0f, 1f)
+
+
         val angleFactor = -((factor * 2 - 1).toDouble().pow(2.0)) + 1
-//                y = -(2 x -1)^2+1
+//            y = -(2 x -1)^2+1
 //            Log.w("LapkaSin", "${angleFactor}")
-        val tempAngle = PI / 2 + PI / 6 + (1 - angleFactor) * PI / 3 - 0.001
+
+        val tempAngleRaw = PI / 2 + PI / 6 + (1 - angleFactor) * PI / 3 - 0.001
+
+        val tempAngle =
+            Lerp.lerp((1f - middleFactor), tempAngleRaw, PI).toDouble()  // todo: check UX
 
         elbowAngle = if (reachableTarget.x < origin.x) tempAngle else 2 * PI - tempAngle
 
@@ -138,11 +156,15 @@ object DrawStyleConfig { // hand - paw  - finger - claw
 class RawHandState(
     private val handState: HandState
 ) {
-    companion object {
-        private val evaluator = FloatEvaluator()
-        fun lerp(fraction: Float, fromTo: Pair<Number, Number>): Float {
-            return evaluator.evaluate(fraction, fromTo.first, fromTo.second)
-        }
+//    companion object {
+//        private val evaluator = FloatEvaluator()
+//        fun lerp(fraction: Float, fromTo: Pair<Number, Number>): Float {
+//            return evaluator.evaluate(fraction, fromTo.first, fromTo.second)
+//        }
+//    }
+
+    fun lerp(fraction: Float, fromTo: Pair<Number, Number>): Float {
+        return Lerp.lerp(fraction, fromTo.first, fromTo.second)
     }
 
     val startPosition = handState.bonesState.startPosition
@@ -203,16 +225,21 @@ data class HandState(
     val animatableProperties: AnimatableHandProperties
 )
 
+data class BasicConfig(
+    val origin: Offset,
+    val screenHeight: Float,
+    val screenWidth: Float
+)
+
 
 // TODO: IMPORTANT
 class AnimTarget(
-//    val basicConfig  // like screen size, origin
+    val basicConfig: BasicConfig,  // like screen size, origin
     val target: Offset,
     val animatableProperties: AnimatableHandProperties
-)
-{
+) {
     fun unpack(): HandState {
-        val cat = CatCalc()
+        val cat = CatCalc(basicConfig)
         cat.tapTarget = target
         return HandState(cat.getBonesState(), animatableProperties)
     }

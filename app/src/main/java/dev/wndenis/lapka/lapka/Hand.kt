@@ -169,9 +169,13 @@ fun DrawScope.DrawLapka(state: RawHandState) {
 //fun Lapka(target, action) {
 fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHandWidth: Float) {
     @SuppressLint("CoroutineCreationDuringComposition")
-
+    val basicConfig = BasicConfig(
+        origin = cutoutPosition,
+        screenHeight = screenHeight,
+        screenWidth = screenWidth
+    )
     val cat by remember {
-        mutableStateOf(CatCalc(cutoutPosition))
+        mutableStateOf(CatCalc(basicConfig))
     }
 
     var target by remember { mutableStateOf(Offset(0.2f, 0.2f)) }
