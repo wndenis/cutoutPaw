@@ -30,6 +30,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 
@@ -45,10 +46,7 @@ val maxDist = 1000f
 val minDelay = 200f
 val maxDelay = 1200f
 
-fun randRange(from: Float, to: Float): Float {
-    assert(from <= to)
-    return (from + Math.random() * (to - from)).toFloat()
-}
+
 
 
 fun startAnim(
@@ -117,7 +115,7 @@ fun Fish() {
 }
 
 
-fun DrawScope.DrawLapka(state: RawHandState) {
+fun DrawScope.DrawLapka(state: CatDrawableState) {
     drawLine(
         start = state.startPosition,
         end = state.elbowPosition,
@@ -169,28 +167,39 @@ fun DrawScope.DrawLapka(state: RawHandState) {
 //fun Lapka(target, action) {
 fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHandWidth: Float) {
     @SuppressLint("CoroutineCreationDuringComposition")
+
+
     val basicConfig = BasicConfig(
         origin = cutoutPosition,
         screenHeight = screenHeight,
-        screenWidth = screenWidth
+        screenWidth = screenWidth,
+        maxHandLength = max(screenHeight, screenWidth) / 3f
     )
-    val cat by remember {
-        mutableStateOf(CatCalc(basicConfig))
-    }
 
-    var target by remember { mutableStateOf(Offset(0.2f, 0.2f)) }
-//    var lapkaVisible by remember { mutableStateOf(true) }
+    val catRepresenter = CatRepresenter(basicConfig)
 
-    var animatableHandProperties by remember {
+
+    var cat by remember {
         mutableStateOf(
-            AnimatableHandProperties()
+            CatSimpleState(
+                target = basicConfig.origin * 2F,
+            )
         )
     }
+
+//    var target by remember { mutableStateOf(Offset(0.2f, 0.2f)) }
+//    var lapkaVisible by remember { mutableStateOf(true) }
+
+//    var animatableHandProperties by remember {
+//        mutableStateOf(
+//            AnimatableHandProperties()
+//        )
+//    }
 //    val catState = remember { MutableTransitionState(cat) }
 //
 //    val trans = updateTransition(transitionState = st)
 //
-    val transition = updateTransition(target, label = "a")
+    val transition = updateTransition(cat, label = "a")
 
     val currentTarget by transition.animateOffset(
         transitionSpec = {
@@ -200,7 +209,8 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
             )
         }, label = "b"
     )
-    { it }
+    { it.target }
+
 
 //    val scope = rememberCoroutineScope()
     Scaffold(
@@ -211,40 +221,17 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
                 .fillMaxSize()
                 .pointerInput(key1 = Unit) {
                     detectDragGestures(
-                        onDragStart = { target = it },
-                        onDrag = { change, _ -> target = change.position }
+                        onDragStart = { cat = cat.copy(target = it) },
+                        onDrag = { change, _ -> cat = cat.copy(target = change.position) }
                     )
                 }
                 .pointerInput(key1 = Unit) {
-                    detectTapGestures { target = it }
+                    detectTapGestures { cat = cat.copy(target = it) }
                 }
         ) {
-            cat.maxHandLength = size.height / 3
-//            cat.tapTarget = Offset(0f, 0f)//currentTarget
-            cat.tapTarget = currentTarget
-
-//            val elbowPosition =
-//                cat.origin + (cat.reachableTarget - cat.origin)
-//                    .normFactor(cat.halfHandLength)
-//                    .rotate(cat.shoulderAngle)
-//            val pawPosition = elbowPosition + (cat.reachableTarget - elbowPosition)
-//                .normFactor(cat.halfHandLength)
-//
-//            // find 90 degree vector to target-origin
-//            val dx = cat.reachableTarget.x - cat.origin.x
-//            val dy = cat.reachableTarget.y - cat.origin.y
-//            val rightAngle = Offset(
-//                x = (cos(PI_HALF) * dx - sin(PI_HALF) * dy).toFloat(),
-//                y = (sin(PI_HALF) * dx + cos(PI_HALF) * dy).toFloat()
-//            )
 
             this.DrawLapka(
-                state = RawHandState(
-                    HandState(
-                        cat.getBonesState(),
-                        animatableHandProperties
-                    )
-                )
+                state = catRepresenter.unpack(cat.copy(target = currentTarget))
             )
         }
 
@@ -255,16 +242,16 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
             verticalArrangement = Arrangement.Bottom
         ) {
             Slider(
-                value = animatableHandProperties.pawFistFactor,
+                value = cat.pawFistFactor,
                 onValueChange = {
-                    animatableHandProperties = animatableHandProperties.copy(pawFistFactor = it)
+                    cat = cat.copy(pawFistFactor = it)
                 },
                 valueRange = 0f.rangeTo(1f)
             )
             Slider(
-                value = animatableHandProperties.handRaiseFactor,
+                value = cat.handRaiseFactor,
                 onValueChange = {
-                    animatableHandProperties = animatableHandProperties.copy(handRaiseFactor = it)
+                    cat = cat.copy(handRaiseFactor = it)
                 },
                 valueRange = 0f.rangeTo(1f)
             )

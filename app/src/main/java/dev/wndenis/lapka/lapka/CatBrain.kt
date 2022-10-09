@@ -1,31 +1,54 @@
 package dev.wndenis.lapka.lapka
 
-import androidx.compose.ui.geometry.Offset
-import ru.nsk.kstatemachine.createStateMachine
-
-class CatBrain {
-
-}
-
-val machine = createStateMachine(name = "CatBrain") { }
+import dev.wndenis.lapka.utils.weightedMapOf
 
 
 enum class Actions{
-    nearPatOnceSlow,
-    nearPatOnceFast,
-    nearPatMulti,
-    farPatOnceFast,
-    tapSlow,
-    tapFast,
-    grabSlow,
-    grabFast
+    nearPat,
+    tap,
+    grab,
+    idle
 }
 
-class Animations{
-    fun nearPatOnceSlow(target: Offset) {
+enum class TargetTypes{
+    near,
+    medium,
+    far
+}
 
+
+val actionWeighted =  weightedMapOf(
+    Actions.nearPat to 4f,
+    Actions.tap to 1f,
+    Actions.grab to 0f,
+    Actions.idle to 10f
+)
+
+data class NearPatConfig(
+    val timesMin: Int = 1,
+    val timesMax: Int = 5,
+    val speed: Float = 10f
+)
+
+
+class Logic(
+    val actionCooldownMsMin: Long = 2000L,
+    val actionCooldownMsMax: Long = 8000L,
+    ){
+    val nearPatConfig = NearPatConfig()
+    fun nextState(): Actions {
+        return actionWeighted.pickWeighted()
     }
+
+//    fun getNearPat(currentAnimTarget: AnimTarget, tapPoint: Offset): KeyframesSpec<AnimTarget> {
+//        return keyframes<AnimTarget> {
+//            currentAnimTarget.copy(animatableProperties = currentAnimTarget.animatableProperties)
+//        }
+//    }
 }
+
+
+
 
 // todo: important
 //val s = LaunchedEffect(key1 = Unit){
@@ -40,20 +63,6 @@ class Animations{
 //    }
 //}
 
-
-/*
-    nearPatOnceSlow
-    nearPatOnceFast
-    nearPatMulti
-    farPatOnceFast
-    tapSlow
-
-
-
-
-
- */
-
 //class AnimTask(
-//    handState: HandState
+//    handState: CatDrawableState
 //)

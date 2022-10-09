@@ -33,7 +33,7 @@ class MainActivity : FragmentActivity() {
 //        setContentView(R.layout.activity_main)
 //        checkOverlayPermission()
 //        startService()
-//        val handState = HandState()
+//        val handState = CatDrawableState()
 //        val logic = Logic { handState }
 //        logic.start()
 

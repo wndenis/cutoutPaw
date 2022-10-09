@@ -10,11 +10,6 @@ class CatCalc(
     val basicConfig: BasicConfig
 ) {
     val origin = basicConfig.origin
-    var maxHandLength = 0f
-        set(value) {
-            field = value
-            recalculate()
-        }
     var tapTarget = Offset(0f, 0f)
         set(value) {
             field = value
@@ -64,8 +59,8 @@ class CatCalc(
 
     private fun calculateReachableTarget() {
         reachableTarget =
-            if (distanceToTapTarget > maxHandLength)
-                origin + (tapTarget - origin).normFactor(maxHandLength)
+            if (distanceToTapTarget > basicConfig.maxHandLength)
+                origin + (tapTarget - origin).normFactor(basicConfig.maxHandLength)
             else tapTarget
     }
 
@@ -74,9 +69,9 @@ class CatCalc(
         val factor =
             MathUtils.clamp(
                 distanceToTapTarget,
-                maxHandLength * 0f,
-                maxHandLength * 1f
-            ) / maxHandLength * 1f
+                basicConfig.maxHandLength * 0f,
+                basicConfig.maxHandLength * 1f
+            ) / basicConfig.maxHandLength * 1f
 
         val dx = abs(reachableTarget.x - origin.x)
         val rawMiddleFactor =
@@ -153,65 +148,55 @@ object DrawStyleConfig { // hand - paw  - finger - claw
 }
 
 
-class RawHandState(
-    private val handState: HandState
+class CatDrawableState(
+    val bonesState: BonesState,
+    val handRaiseFactor: Float,
+    val pawFistFactor: Float
 ) {
-//    companion object {
-//        private val evaluator = FloatEvaluator()
-//        fun lerp(fraction: Float, fromTo: Pair<Number, Number>): Float {
-//            return evaluator.evaluate(fraction, fromTo.first, fromTo.second)
-//        }
-//    }
 
     fun lerp(fraction: Float, fromTo: Pair<Number, Number>): Float {
         return Lerp.lerp(fraction, fromTo.first, fromTo.second)
     }
 
-    val startPosition = handState.bonesState.startPosition
-    val elbowPosition = handState.bonesState.elbowPosition
-    val pawPosition = handState.bonesState.pawPosition
-    val pawRotation = handState.bonesState.pawRotation
+    val startPosition = bonesState.startPosition
+    val elbowPosition = bonesState.elbowPosition
+    val pawPosition = bonesState.pawPosition
+    val pawRotation = bonesState.pawRotation
 
     fun scale(value: Float): Float {
-        return value * (1 + handState.animatableProperties.handRaiseFactor * DrawStyleConfig.raiseScale)
+        return value * (1 + handRaiseFactor * DrawStyleConfig.raiseScale)
     }
 
     val handThickness = lerp(
-        handState.animatableProperties.handRaiseFactor,
+        handRaiseFactor,
         DrawStyleConfig.handThickness
     )
     val pawRadius = scale(
         lerp(
-            handState.animatableProperties.pawFistFactor,
+            pawFistFactor,
             DrawStyleConfig.pawRadius
         )
     )
     val fingerOffsetFromPaw = scale(
         lerp(
-            handState.animatableProperties.pawFistFactor,
+            pawFistFactor,
             DrawStyleConfig.fingerOffsetFromPaw
         )
     )
     val fingerRadius = scale(
         lerp(
-            handState.animatableProperties.pawFistFactor,
+            pawFistFactor,
             DrawStyleConfig.fingerRadius
         )
     )
     val clawLength = scale(
         lerp(
-            handState.animatableProperties.pawFistFactor,
+            pawFistFactor,
             DrawStyleConfig.clawLength
         )
     )
     val clawWidth = DrawStyleConfig.clawWidth
 }
-
-
-data class AnimatableHandProperties(
-    val handRaiseFactor: Float = 0f,  // 0..1, 0 - laying, 1 - floating
-    val pawFistFactor: Float = 1f  // 0..1, 0 - relaxed, 1 - fist
-)
 
 data class BonesState(
     val startPosition: Offset,
@@ -220,28 +205,35 @@ data class BonesState(
     val pawRotation: Offset,
 )
 
-data class HandState(
-    val bonesState: BonesState,
-    val animatableProperties: AnimatableHandProperties
-)
 
 data class BasicConfig(
     val origin: Offset,
     val screenHeight: Float,
-    val screenWidth: Float
+    val screenWidth: Float,
+    val maxHandLength: Float
 )
 
 
 // TODO: IMPORTANT
-class AnimTarget(
-    val basicConfig: BasicConfig,  // like screen size, origin
+data class CatSimpleState(
     val target: Offset,
-    val animatableProperties: AnimatableHandProperties
+    val handRaiseFactor: Float = 0f,  // 0..1, 0 - laying, 1 - floating
+    val pawFistFactor: Float = 1f  // 0..1, 0 - relaxed, 1 - fist
+)
+
+
+class CatRepresenter(
+    private val basicConfig: BasicConfig,  // like screen size, origin
 ) {
-    fun unpack(): HandState {
+    fun unpack(catSimpleState: CatSimpleState): CatDrawableState {
         val cat = CatCalc(basicConfig)
-        cat.tapTarget = target
-        return HandState(cat.getBonesState(), animatableProperties)
+        cat.tapTarget = catSimpleState.target
+
+        return CatDrawableState(
+            cat.getBonesState(),
+            catSimpleState.handRaiseFactor,
+            catSimpleState.pawFistFactor
+        )
     }
 }
 

@@ -29,12 +29,6 @@ fun Offset.normFactor(factor: Double): Offset {
     return this.normFactor(factor.toFloat())
 }
 
-fun Offset.powLen(pow: Int): Double {
-    val result = Math.pow(this.len().toDouble(), pow.toDouble())
-    assert(result > 0)
-    return result
-}
-
 fun Offset.rotate(angle: Double): Offset {
     return Offset(
         x = (cos(angle) * (this.x) - sin(angle) * (this.y)).toFloat(),
