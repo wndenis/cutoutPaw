@@ -167,7 +167,9 @@ class CatDrawableState(
         return value * (1 + handRaiseFactor * DrawStyleConfig.raiseScale)
     }
 
-    val handThickness = lerp(
+    val firstHandThickness = DrawStyleConfig.handThickness.first
+
+    val secondHandThickness = lerp(
         handRaiseFactor,
         DrawStyleConfig.handThickness
     )

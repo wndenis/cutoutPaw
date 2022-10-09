@@ -47,8 +47,6 @@ val minDelay = 200f
 val maxDelay = 1200f
 
 
-
-
 fun startAnim(
     scope: CoroutineScope,
     targetCallback: (Offset, Boolean) -> Unit,
@@ -115,25 +113,73 @@ fun Fish() {
 }
 
 
-fun DrawScope.DrawLapka(state: CatDrawableState) {
-    drawLine(
+fun DrawScope.drawScaledLine(
+    start: Offset,
+    end: Offset,
+    startWidth: Float,
+    endWidth: Float,
+    steps: Int = 10,
+    color: Color,
+    cap: StrokeCap
+) {
+    val dOffset = end - start
+    val distance = dOffset.len()
+    val direction = dOffset.norm()
+    val dWidth = endWidth - startWidth
+    var prev = start
+    var width = startWidth
+    val step = 1f / steps
+    for (i in 0 until steps) {
+        val next = prev + direction * distance * step
+        drawLine(
+            start = prev,
+            end = next,
+            color = color,
+            strokeWidth = width,
+            cap = cap
+        )
+//        val furPath = Path()
+//        furPath.addRect(Rect(0f, 0f, 10f, 1f))
+//        drawLine(
+//            start = prev,
+//            end = next,
+//            color = color,
+//            strokeWidth = width,
+//            cap = cap,
+//            pathEffect = PathEffect.stampedPathEffect(
+//                shape=furPath,
+//                advance = 1f,
+//                phase = 1f,
+//                style = StampedPathEffectStyle.Morph)
+//        )
+        width += dWidth * step
+        prev = next
+    }
+}
+
+
+fun DrawScope.DrawLapka(state: CatDrawableState, color: Color = Color.Black) {
+    val middleWidth = state.firstHandThickness + (state.secondHandThickness - state.firstHandThickness) / 2
+    drawScaledLine(
         start = state.startPosition,
         end = state.elbowPosition,
-        color = Color.Cyan,
-        strokeWidth = state.handThickness,
+        color = color,
+        startWidth = state.firstHandThickness,
+        endWidth = middleWidth,
         cap = StrokeCap.Round
     )
 
-    drawLine(
+    drawScaledLine(
         start = state.elbowPosition,
         end = state.pawPosition,
-        color = Color.Black,
-        strokeWidth = state.handThickness,
+        color = color,
+        startWidth = middleWidth,
+        endWidth = state.secondHandThickness,
         cap = StrokeCap.Round
     )
 
     drawCircle(
-        color = Color.Black,
+        color = color,
         center = state.pawPosition,
         radius = state.pawRadius
     )
@@ -145,14 +191,14 @@ fun DrawScope.DrawLapka(state: CatDrawableState) {
         val fingerOffset = fingerRotated.rotate(PI / 4 * i + PI)
         val globalFingerOffset = state.pawPosition + fingerOffset
         drawCircle(
-            color = Color.Black,
+            color = color,
             center = globalFingerOffset,
             radius = state.fingerRadius
         )
         val steps = 10
         for (step in 0..steps) {
             drawLine(
-                color = Color.Black,
+                color = color,
                 start = globalFingerOffset + fingerOffset.normFactor(state.clawLength / steps * step),
                 end = globalFingerOffset + fingerOffset.normFactor(state.clawLength / steps * (step + 1)),
                 strokeWidth = state.clawWidth * (steps - step)
@@ -182,7 +228,7 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
     var cat by remember {
         mutableStateOf(
             CatSimpleState(
-                target = basicConfig.origin * 2F,
+                target = basicConfig.origin + Offset(0f, 1000f),
             )
         )
     }
@@ -214,7 +260,8 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
 
 //    val scope = rememberCoroutineScope()
     Scaffold(
-        backgroundColor = Color.Transparent
+//        backgroundColor = Color.Transparent
+        backgroundColor = Color.White
     ) {
         Canvas(
             modifier = Modifier
@@ -229,9 +276,16 @@ fun Lapka(screenWidth: Float, screenHeight: Float, cutoutPosition: Offset, maxHa
                     detectTapGestures { cat = cat.copy(target = it) }
                 }
         ) {
-
+            val localCat = cat.copy(target = currentTarget)
+            val state = catRepresenter.unpack(localCat)
+            val shadowState = catRepresenter.unpack(
+                localCat.copy(
+                    target = localCat.target + Offset(10f, 10f) * localCat.handRaiseFactor
+                )
+            )
+            this.DrawLapka(shadowState, Color(182, 182, 182))
             this.DrawLapka(
-                state = catRepresenter.unpack(cat.copy(target = currentTarget))
+                state = state
             )
         }
 
